@@ -339,63 +339,8 @@ def load_signal_file():
         print("Error: Invalid domain type in file.")
         return None
 
-# Function to perform Fourier Transform and display results
-# def apply_fourier_transform():
-#     sampling_frequency = simpledialog.askfloat("Input", "Enter sampling frequency (Hz):")
-#     if not sampling_frequency:
-#         return
-#
-#     domain_type, time_indices, signal_values = load_signal_file()
-#     if domain_type == 0:
-#         fft_values = np.fft.fft(signal_values)
-#         freqs = np.fft.fftfreq(len(signal_values), 1 / sampling_frequency)
-#
-#         amplitude = np.abs(fft_values)
-#         phase = np.angle(fft_values)
-#         amplitude_list = ["{:.2f}".format(amp) for amp in amplitude]
-#         phase_list = ["{:.2f}".format(ph) for ph in phase]
-#
-#         print("Amplitude List:", amplitude_list)
-#         print("Phase List:", phase_list)
-#
-#         plt.figure(figsize=(12, 6))
-#         plt.subplot(1, 2, 1)
-#         plt.stem(freqs, amplitude, label="Amplitude", linefmt="blue", markerfmt="bo", basefmt=" ")
-#         plt.xlabel("Frequency (Hz)")
-#         plt.ylabel("Amplitude")
-#         plt.title("Frequency vs Amplitude")
-#         plt.grid()
-#         plt.legend()
-#
-#         plt.subplot(1, 2, 2)
-#         plt.stem(freqs, phase, label="Phase", linefmt="orange", markerfmt="ro", basefmt=" ")
-#         plt.xlabel("Frequency (Hz)")
-#         plt.ylabel("Phase (radians)")
-#         plt.title("Frequency vs Phase")
-#         plt.grid()
-#         plt.legend()
-#
-#         plt.tight_layout()
-#         plt.show()
-#
-#     else:
-#        messagebox.showinfo("Info", "The signal is already in the frequency domain.")
-
 
 def compute_dft(samples, fs):
-    """
-    Compute the Discrete Fourier Transform (DFT) of a signal.
-
-    Args:
-        samples (list): Time-domain signal samples.
-        fs (float): Sampling frequency in Hz.
-
-    Returns:
-        tuple: (frequencies, magnitudes, phases)
-               - frequencies: List of frequency indices.
-               - magnitudes: List of amplitude magnitudes.
-               - phases: List of phase angles (in radians).
-    """
     N = len(samples)  # Number of samples
     magnitudes = []
     phases = []
@@ -484,7 +429,10 @@ def reconstruct_signal_from_frequency_domain():
     print("\nFormatted Output List:")
     for output in output_list:
         print(output)   
-        
+
+
+
+
 # Plot the reconstructed signal with discrete markers
     plt.figure()
     plt.stem(time_indices, np.real(reconstructed_signal), linefmt="blue", markerfmt="bo", basefmt=" ", label="Reconstructed Signal")
@@ -494,6 +442,56 @@ def reconstruct_signal_from_frequency_domain():
     plt.grid()
     plt.legend()
     plt.show()
+
+
+# DCT
+
+# Function to compute DCT (Discrete Cosine Transform)
+def compute_dct(signal):
+    N = len(signal)  # Length of the signal
+    dct_coeffs =  [0 for i in range(N)]  # Array to hold the DCT coefficients
+
+    for k in range(N):  # Loop over the frequency index k
+        for n in range (N):  # Loop over the time index n (1-based index)
+            # Compute the cosine term
+            cosine_term = math.cos((math.pi / (4 * N)) * (2 * n - 1) * (2 * k - 1))
+            dct_coeffs[k] += signal[n] * cosine_term  # Sum over n (adjusting index for 0-based)
+        # Apply the scaling factor and store the result
+        dct_coeffs[k] *= math.sqrt(2 / N)
+
+    return dct_coeffs
+
+# Function to handle the "Compute DCT" action
+def compute_dct_from_file():
+    # Ask the user to browse for a file containing signal data
+    file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
+    if not file_path:
+        return
+
+    # Read the file and parse the data
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+
+    signal = []
+    for line in lines[3:]:
+        if len(line.strip().split()) != 2:
+            continue  # Assuming the first 3 lines are metadata
+        index, value = line.strip().split()
+        signal.append(float(value))
+
+    # Compute the DCT of the signal
+    dct_coeffs = compute_dct(signal)
+    for line in dct_coeffs:
+        print(line)
+    # Plot the DCT coefficients
+    fig, axs = plt.subplots(1)
+    axs.plot(dct_coeffs)
+    axs.set_title("DCT Coefficients")
+
+    # Display the plot in the Tkinter window
+    canvas = FigureCanvasTkAgg(fig, master=root)
+    canvas.draw()
+    canvas.get_tk_widget().grid(row=20, column=0, columnspan=20)
 
 
 '''_____________________ GUI _____________________ '''
@@ -640,6 +638,13 @@ menu.add_cascade(label="Frequency Domain", menu=freq_menu)
 freq_menu.add_command(label="Apply Fourier Transform", command=apply_fourier_transform)
 freq_menu.add_command(label="Reconstruct Signal (IDFT)", command=reconstruct_signal_from_frequency_domain)
 
+
+#
+
+# freq_menu.add_command(label="Compute DCT", command=compute_dct_from_file)
+freq_menu.add_command(label="Compute DCT", command=compute_dct_from_file)
+
+#
 
 labeltext = StringVar()
 labeltext.set(" ")
